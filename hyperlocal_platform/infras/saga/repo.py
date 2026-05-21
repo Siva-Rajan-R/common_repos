@@ -2,6 +2,7 @@ from .main import AsyncSession
 from sqlalchemy import select,update,delete,func,cast,ARRAY,TEXT,text,Text,String
 import json
 from .models import SagaStates
+from fastapi.encoders import jsonable_encoder
 from ...core.models.service_repo_base_models import CommonBaseRepoModel
 from sqlalchemy.dialects.postgresql import JSONB
 from .schemas import CreateSagaStateSchema,UpdateSagaStateSchema
@@ -34,11 +35,12 @@ class SagaStatesRepo(CommonBaseRepoModel):
     
     @start_db_transaction
     async def merge(self,service:str,data:dict,saga_id:str):
+        json_safe_data=jsonable_encoder(data)
         ss_toupdate=(
             update(SagaStates)
             .where(SagaStates.id==saga_id)
             .values(
-                data=SagaStates.data+cast({service:data},JSONB)
+                data=SagaStates.data+cast({service:json_safe_data},JSONB)
             )
             .returning(SagaStates.id)
         )
